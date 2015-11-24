@@ -41,53 +41,33 @@
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular.min.js"></script> -->
     <!-- <script src="controllers/controller.js"></script> -->
 
-    <h1>job queue is running</h1>
-    <h2><span class="label label-info">queue</span></h2>
-    <table class="table table-striped">
-      <tr>
-        <th>Task</th>
-        <th>Status</th>
-      </tr>
-      <tr>
-        <td>task</td>
-        <td>status</td>
-      </tr>
-      <tr>
-        <td>task</td>
-        <td>status</td>
-      </tr>
-      <tr>
-        <td>task</td>
-        <td>status</td>
-      </tr>
-      <tr>
-        <td>task</td>
-        <td>status</td>
-      </tr>
-      <tr>
-        <td>task</td>
-        <td>status</td>
-      </tr>
-      <tr>
-        <td>task</td>
-        <td>status</td>
-      </tr>
-      <tr>
-        <td>task</td>
-        <td>status</td>
-      </tr>
-      <tr>
-        <td>task</td>
-        <td>status</td>
-      </tr>
-      <tr>
-        <td>task</td>
-        <td>status</td>
-      </tr>
-      <tr>
-        <td>task</td>
-        <td>status</td>
-      </tr>
-    </table>
+    <div ng-controller="AppCtrl">
+      <h1>job queue is running</h1>
+      <h2><span class="label label-info">queue</span></h2>
+      <table class="table table-striped">
+        <tr>
+          <th>URL</th>
+          <th>Data</th>
+          <th>Callback</th>
+        </tr>
+        <tr ng-repeat="job in jobs">
+          <td>{{job.url}}</td>
+          <td><pre>{{job.data|json:2}}</pre></td>
+          <td>{{job.callback}}</td>
+        </tr>
+      </table>
+    </div>  
+
+    <form action="./enqueue" method="post">
+      <div>
+        <input type="text" name="url" value="www.example.com" />  
+        <input type="text" name="data" value="{1:2,3:4}" />  
+        <input type="text" name="data" value="www.example.com/cb" />  
+        <input type="submit" value="send" />
+      </div>
+    </form>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular.min.js"></script>
+    <script src="controllers/jobs.js"></script>
   </body>
 </html>
