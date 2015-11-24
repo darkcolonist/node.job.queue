@@ -1,7 +1,13 @@
 {
-  "name" : "Node Job Queue",
-  "version" : "1.0.0",
-  "description" : "An application that processes, queues and runs jobs in succession",
-  "author" : "Christian Noel Reyes <darkcolonist@gmail.com>",
-  "main" : "server.js"
+  "name": "dc.node.job.queue",
+  "version": "1.0.0",
+  "description": "An application that processes, queues and runs jobs in succession",
+  "author": "Christian Noel Reyes <darkcolonist@gmail.com>",
+  "main": "server.js",
+  "dependencies": {
+    "async": "^1.5.0",
+    "body-parser": "^1.14.1",
+    "express": "^4.13.3",
+    "flat-file-db": "^0.1.5"
+  }
 }
