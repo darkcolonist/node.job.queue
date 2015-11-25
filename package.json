@@ -1,6 +1,6 @@
 {
   "name": "dc.node.job.queue",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "An application that processes, queues and runs jobs in succession",
   "author": "Christian Noel Reyes <darkcolonist@gmail.com>",
   "main": "server.js",
