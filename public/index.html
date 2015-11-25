@@ -46,26 +46,23 @@
       <h2><span class="label label-info">queue</span></h2>
       <table class="table table-striped">
         <tr>
+          <th>uid</th>
+          <th>Queue</th>
+          <th>Status</th>
           <th>URL</th>
           <th>Data</th>
           <th>Callback</th>
         </tr>
         <tr ng-repeat="job in jobs">
+          <td>{{job.uid}}</td>
+          <td>{{job.queue}}</td>
+          <td>{{job.status}}</td>
           <td>{{job.url}}</td>
           <td><pre>{{job.data|json:2}}</pre></td>
           <td>{{job.callback}}</td>
         </tr>
       </table>
-    </div>  
-
-    <form action="./enqueue" method="post">
-      <div>
-        <input type="text" name="url" value="www.example.com" />  
-        <input type="text" name="data" value="{1:2,3:4}" />  
-        <input type="text" name="data" value="www.example.com/cb" />  
-        <input type="submit" value="send" />
-      </div>
-    </form>
+    </div>
 
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular.min.js"></script>
     <script src="controllers/jobs.js"></script>

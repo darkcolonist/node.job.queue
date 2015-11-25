@@ -4,10 +4,16 @@
   "description": "An application that processes, queues and runs jobs in succession",
   "author": "Christian Noel Reyes <darkcolonist@gmail.com>",
   "main": "server.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/darkcolonist/node.job.queue.git"
+  },
   "dependencies": {
     "async": "^1.5.0",
     "body-parser": "^1.14.1",
     "express": "^4.13.3",
-    "flat-file-db": "^0.1.5"
+    "flat-file-db": "^0.1.5",
+    "socket.io": "^1.3.7",
+    "uniqid": "^1.0.0"
   }
 }
