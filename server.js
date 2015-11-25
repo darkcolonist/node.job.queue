@@ -15,7 +15,17 @@ app.use(bodyParser.urlencoded({
 }));
 
 var settings = {
-  concurrency : 5
+  /**
+   * number of jobs (per queue) to run at the same time
+   * @type {Number}
+   */
+  concurrency : 5,
+
+  /**
+   * duration to keep done jobs in array (milliseconds)
+   * @type {Number}
+   */
+  done_jobs_lifetime : 6000
 };
 
 var jobs = [
@@ -89,37 +99,38 @@ util = {
       execute : function(obj){
         obj.status = "working";
 
-        console.log("working: "+obj.url);
-        console.log("sending data: ");
-        console.log(obj.data);
-
         request.post(
-            obj.url,
-            { form: obj.data },
-            function (error, response, body) {
-              console.log("response: "+body);
+          obj.url,
+          { form: obj.data },
+          function (error, response, body) {
 
-              if(typeof obj.callback !== 'undefined'){
-                obj.url_response = body;
+            if(typeof obj.callback !== 'undefined'){
+              obj.url_response = JSON.parse(body);
 
-                console.log("working: "+obj.callback);
-                request.post(
-                  obj.callback,
-                  { form : obj },
-                  function(error_cb, response_cb, body_cb){
-                    // nothing needs to be done here
-                  }
-                );
-              }
-
-              if (!error && response.statusCode == 200) {
-                obj.status = "done";
-              }else{
-                obj.status = "failed";
-              }
-
-              obj.finished();
+              request.post(
+                obj.callback,
+                { form : obj },
+                function(error_cb, response_cb, body_cb){
+                  // nothing needs to be done here
+                }
+              );
             }
+
+            if (!error && response.statusCode == 200) {
+              obj.status = "done";
+            }else{
+              obj.status = "failed";
+            }
+
+            // remove from queue after settings.done_jobs_lifetime
+            setTimeout(function(){
+              var index = jobs.indexOf(obj);
+
+              jobs.splice(index, 1);
+            } , settings.done_jobs_lifetime);
+
+            obj.finished();
+          }
         );
       }
     }
