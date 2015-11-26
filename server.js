@@ -4,8 +4,10 @@ var express    = require('express'),
     bodyParser = require('body-parser'),
     http       = require('http'),
     request    = require('request'),
+    nedb       = require('nedb'),
+    moment     = require('moment'),
 
-    app        = express(),
+    app        = express();
     server     = http.createServer(app),
     io         = require('socket.io').listen(server);
 
@@ -22,10 +24,29 @@ var settings = {
   concurrency : 5,
 
   /**
+   * compact database frequency (milliseconds)
+   * @type {Number}
+   */
+  db_compact_frequency : 30000,
+
+  /**
    * duration to keep done jobs in array (milliseconds)
    * @type {Number}
    */
-  done_jobs_lifetime : 6000
+  done_jobs_lifetime : 6000,
+
+  /**
+   * the port in which this application will run
+   * @type {Number}
+   */
+  port : 1028,
+
+  /**
+   * expiration time of errors in errors.db. (hours)
+   * after this is reached, errors get pruned from errors.db
+   * @type {Number}
+   */
+  max_age_of_errors : 24
 };
 
 var jobs = [
@@ -42,6 +63,9 @@ var jobs = [
 // }, settings.concurrency);
 
 var queues = {}
+
+db_jobs = new nedb({ filename: "data/jobs.db", autoload: true });
+db_errors = new nedb({ filename: "data/errors.db", autoload: true });
 
 app.post('/enqueue', function(req, res){
   if(typeof req.body.url === 'undefined'){
@@ -80,19 +104,23 @@ util = {
     return queues[name];
   },
 
-  enqueue : function(data){
-    var queue_name = typeof data.queue === 'undefined' ? "main" : data.queue
+  enqueue : function(data, in_db){
+    var queue_name = typeof data.queue === 'undefined' ? "main" : data.queue;
+    var in_db = typeof in_db === 'undefined' ? false : in_db;
 
     queue = util.get_queue(queue_name);
 
     job = {
-      uid : uniqid(),
-      queue : queue_name,
-      status : "waiting",
-      url : data.url,
-      data : data.data,
+      _id      : typeof data._id === 'undefined' ? uniqid() : data._id,
+      queue    : queue_name,
+      status   : typeof data.status === 'undefined' ? "waiting" : data.status,
+      url      : data.url,
+      data     : data.data,
       callback : data.callback
     };
+
+    if(!in_db)
+      db_jobs.insert(job, function(err, doc){ /** inserted */ });
 
     task = {
       obj : job,
@@ -103,35 +131,57 @@ util = {
           obj.url,
           { form: obj.data },
           function (error, response, body) {
+            if (!error && response.statusCode == 200) {
+              obj.status = "done";
+            }else{
+              obj.status = "failed";
+              obj.error = "failed";
+              obj.type = "called";
+              obj.timestamp = moment().format('YYYY-MM-DD HH:mm:ss');
+              db_errors.insert(obj, function(err, doc){ /** inserted */ });
+            }
+
+            db_jobs.update({ _id: obj._id }, { $set: { "status" : obj.status } }, {}, function(err, num_replaced, upsert){});
 
             if(typeof obj.callback !== 'undefined'){
-              obj.url_response = JSON.parse(body);
-
+              
+              try{
+                  obj.url_response = JSON.parse(body);
+              }catch(e){
+                  obj.url_response = body;
+              }
+              
               request.post(
                 obj.callback,
                 { form : obj },
                 function(error_cb, response_cb, body_cb){
                   // nothing needs to be done here
                 }
-              );
-            }
-
-            if (!error && response.statusCode == 200) {
-              obj.status = "done";
-            }else{
-              obj.status = "failed";
+              ).on('error', function(err){
+                obj.error = err;
+                obj.type = "callback_url";
+                obj.timestamp = moment().format('YYYY-MM-DD HH:mm:ss');
+                db_errors.insert(obj, function(err, doc){ /** inserted */ });
+              });
             }
 
             // remove from queue after settings.done_jobs_lifetime
             setTimeout(function(){
               var index = jobs.indexOf(obj);
 
+              db_jobs.remove({ _id: jobs[index]._id }, {}, function(err, num_removed){});
+
               jobs.splice(index, 1);
             } , settings.done_jobs_lifetime);
 
             obj.finished();
           }
-        );
+        ).on('error', function(err){
+          obj.error = err;
+          obj.type = "url";
+          obj.timestamp = moment().format('YYYY-MM-DD HH:mm:ss');
+          db_errors.insert(obj, function(err, doc){ /** inserted */ });
+        });
       }
     }
 
@@ -151,8 +201,55 @@ util = {
       '(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
       '(\\#[-a-z\\d_]*)?$','i'); // fragment locator
     return pattern.test(str);
+  },
+
+  try_enqueue_from_db : function(){
+    db_jobs.count({}, function(err, count){
+
+      if(count > 0){
+        console.log(count + " unfinished jobs found, enqueuing...");
+        db_jobs.find({}, function(err, docs){
+          for (var i = 0; i < docs.length; i++) {
+            util.enqueue(docs[i]);
+          }
+          console.log("unfinished jobs queued, continuing normally...");
+        });
+      }else{
+        console.log("no unfinished jobs found, continuing normally...");
+      }
+
+    });
+  },
+
+  delete_aged_errors : function(){
+    var max_date = moment()
+      .subtract(settings.max_age_of_errors, "hours")
+      .format('YYYY-MM-DD HH:mm:ss');
+
+    db_errors.remove({ timestamp : { $lte : max_date } }, { multi: true }, function (err, numRemoved) {
+      // numRemoved = 1
+      setTimeout(util.delete_aged_errors, settings.db_compact_frequency);
+    });
   }
 }
 
-server.listen(1028);
-console.log("Server is listening to port 1028");
+
+/**
+ * on startup, check jobs that need to be ran and were unable to run
+ * last time
+ */
+util.try_enqueue_from_db();
+
+/**
+ * initialize databases
+ */
+db_jobs.persistence.setAutocompactionInterval(settings.db_compact_frequency);
+db_errors.persistence.setAutocompactionInterval(settings.db_compact_frequency);
+
+/**
+ * initialize errors.db pruning
+ */
+util.delete_aged_errors();
+
+server.listen(settings.port);
+console.log("Server is listening to port "+settings.port);
