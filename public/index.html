@@ -42,26 +42,50 @@
     <!-- <script src="controllers/controller.js"></script> -->
 
     <div ng-controller="AppCtrl">
-      <h1>job queue is running</h1>
-      <h2><span class="label label-info">queue</span></h2>
-      <table class="table table-striped">
-        <tr>
-          <th>uid</th>
-          <th>Queue</th>
-          <th>Status</th>
-          <th>URL</th>
-          <th>Data</th>
-          <th>Callback</th>
-        </tr>
-        <tr ng-repeat="job in jobs">
-          <td>{{job._id}}</td>
-          <td>{{job.queue}}</td>
-          <td>{{job.status}}</td>
-          <td>{{job.url}}</td>
-          <td><pre>{{job.data|json:2}}</pre></td>
-          <td>{{job.callback}}</td>
-        </tr>
-      </table>
+      <h1>job queue is live!</h1>
+
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title"><span class="glyphicon glyphicon-stats" aria-hidden="true"></span> Status</h3>
+        </div>
+        <table class="table table-striped">
+          <tr>
+            <th>Queue</th>
+            <th>Running</th>
+            <th>Waiting</th>
+          </tr>
+          <tr ng-repeat="queue in queues">
+            <td>{{queue.name}}</td>
+            <td><span ng-class="{'label-success': queue.running > 0, 'label-default' : queue.running == 0}" class="label">{{queue.running}}</span></td>
+            <td><span ng-class="{'label-warning': queue.waiting > 0, 'label-default' : queue.waiting == 0}" class="label">{{queue.waiting}}</span></td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title"><span class="glyphicon glyphicon-tasks" aria-hidden="true"></span> Task Queue</h3>
+        </div>
+        <table class="table table-striped">
+          <tr>
+            <th>uid</th>
+            <th>Queue</th>
+            <th>Status</th>
+            <th>URL</th>
+            <th>Data</th>
+            <th>Callback</th>
+          </tr>
+          <tr ng-repeat="job in jobs">
+            <td>{{job._id}}</td>
+            <td>{{job.queue}}</td>
+            <td>{{job.status}}</td>
+            <td>{{job.url}}</td>
+            <td><pre>{{job.data|json:2}}</pre></td>
+            <td>{{job.callback}}</td>
+          </tr>
+        </table>
+      </div>
+
     </div>
 
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular.min.js"></script>

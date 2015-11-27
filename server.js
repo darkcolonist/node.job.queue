@@ -91,6 +91,34 @@ app.get('/jobs', function(req, res){
   res.json(jobs);
 });
 
+app.get('/status', function(req, res){
+  var status = {
+    queues : []
+  };
+  for(var q_key in queues){
+    var queue = {
+      name : q_key,
+      waiting : queues[q_key].length(),
+      running : queues[q_key].running(),
+      processing : queues[q_key].workersList()
+    };
+    status.queues.push(queue);
+  }
+
+  // sort queues by waiting then by name
+  status.queues.sort(function(a, b){
+    if(a.waiting > b.waiting) return -1;
+    if(a.waiting < b.waiting) return 1;
+    if(a.running > b.running) return -1;
+    if(a.running < b.running) return 1;
+    if(a.name.toLowerCase() > b.name.toLowerCase()) return -1;
+    if(a.name.toLowerCase() < b.name.toLowerCase()) return 1;
+    return 0;
+  });
+
+  res.json(status);
+});
+
 util = {
   get_queue : function(name){
     if(typeof queues[name] === 'undefined'){
