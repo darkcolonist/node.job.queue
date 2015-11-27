@@ -54,6 +54,7 @@
             <th>Running</th>
             <th>Waiting</th>
             <th>Total</th>
+            <th>Failed</th>
             <th>Last Activity</th>
           </tr>
           <tr ng-repeat="queue in queues">
@@ -61,37 +62,15 @@
             <td><span ng-bind="queue.running" ng-class="{'label-success': queue.running > 0, 'label-default' : queue.running == 0}" class="label"></span></td>
             <td><span ng-bind="queue.waiting" ng-class="{'label-warning': queue.waiting > 0, 'label-default' : queue.waiting == 0}" class="label"></span></td>
             <td ng-bind="queue.total_jobs"></td>
+            <td><span ng-bind="queue.failed_jobs" ng-class="{'label-danger': queue.failed_jobs > 0, 'label-default' : queue.failed_jobs == 0}" class="label"></span></td>
             <td ng-bind="queue.last_ping"></td>
-          </tr>
-        </table>
-      </div>
-
-      <div class="panel panel-default">
-        <div class="panel-heading">
-          <h3 class="panel-title"><span class="glyphicon glyphicon-tasks" aria-hidden="true"></span> Task Queue</h3>
-        </div>
-        <table class="table table-striped">
-          <tr>
-            <th>uid</th>
-            <th>Queue</th>
-            <th>Status</th>
-            <th>URL</th>
-            <th>Data</th>
-            <th>Callback</th>
-          </tr>
-          <tr ng-repeat="job in jobs">
-            <td>{{job._id}}</td>
-            <td>{{job.queue}}</td>
-            <td>{{job.status}}</td>
-            <td>{{job.url}}</td>
-            <td><pre>{{job.data|json:2}}</pre></td>
-            <td>{{job.callback}}</td>
           </tr>
         </table>
       </div>
 
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.7/socket.io.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular.min.js"></script>
     <script src="controllers/jobs.js"></script>
   </body>

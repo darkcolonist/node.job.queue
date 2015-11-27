@@ -87,42 +87,48 @@ app.post('/enqueue', function(req, res){
   );
 });
 
-app.get('/jobs', function(req, res){
-  res.json(jobs);
-});
-
-app.get('/status', function(req, res){
+var broadcast_lastest_status = function(){
   var status = {
     queues : []
   };
   for(var q_key in queues){
     var queue = {
-      name : q_key,
-      waiting : queues[q_key].length(),
-      running : queues[q_key].running(),
-      processing : queues[q_key].workersList(),
-      last_ping : moment(queues[q_key].last_ping, "YYYY-MM-DD HH:mm:ss").fromNow(),
-      total_jobs : queues[q_key].total_jobs
+      name        : q_key,
+      waiting     : queues[q_key].length(),
+      running     : queues[q_key].running(),
+      processing  : queues[q_key].workersList(),
+      last_ping   : moment(queues[q_key].last_ping, "YYYY-MM-DD HH:mm:ss").fromNow(),
+      total_jobs  : queues[q_key].total_jobs,
+      failed_jobs : queues[q_key].failed_jobs
     };
     status.queues.push(queue);
   }
 
   // sort queues by waiting then by name
   status.queues.sort(function(a, b){
-    if(a.waiting > b.waiting) return -1;                       // descending
-    if(a.waiting < b.waiting) return 1;                        // descending
-    if(a.running > b.running) return -1;                       // descending
-    if(a.running < b.running) return 1;                        // descending
-    if(a.name.toLowerCase() > b.name.toLowerCase()) return 1; // ascending
+    if(a.waiting > b.waiting) return -1;                        // descending
+    if(a.waiting < b.waiting) return 1;                         // descending
+    if(a.running > b.running) return -1;                        // descending
+    if(a.running < b.running) return 1;                         // descending
+    if(a.name.toLowerCase() > b.name.toLowerCase()) return 1;   // ascending
     if(a.name.toLowerCase() < b.name.toLowerCase()) return -1;  // ascending
     return 0;
   });
 
-  res.json(status);
+  io.emit('status', status);
+}
+
+io.on('connection', function(socket){
+  // console.log("user connected!");
+  broadcast_lastest_status();
+})
+
+app.get('/jobs', function(req, res){
+  res.json(jobs);
 });
 
 util = {
-  get_queue : function(name){
+  get_queue : function(name, touch){
     if(typeof queues[name] === 'undefined'){
       // create a new queue
       queues[name] = async.queue(function(task, finished){
@@ -131,10 +137,13 @@ util = {
       }, settings.concurrency);
 
       queues[name].total_jobs = 0;
+      queues[name].failed_jobs = 0;
     }
 
-    queues[name].total_jobs ++;
-    queues[name].last_ping = moment().format("YYYY-MM-DD HH:mm:ss");
+    if(typeof touch === 'undefined' || touch == true){
+      queues[name].total_jobs ++;
+      queues[name].last_ping = moment().format("YYYY-MM-DD HH:mm:ss");
+    }
 
     return queues[name];
   },
@@ -197,6 +206,7 @@ util = {
                 obj.type = "callback_url";
                 obj.timestamp = moment().format('YYYY-MM-DD HH:mm:ss');
                 db_errors.insert(obj, function(err, doc){ /** inserted */ });
+                broadcast_lastest_status();
               });
             }
 
@@ -207,21 +217,30 @@ util = {
               db_jobs.remove({ _id: jobs[index]._id }, {}, function(err, num_removed){});
 
               jobs.splice(index, 1);
+
+              broadcast_lastest_status();
             } , settings.done_jobs_lifetime);
 
             obj.finished();
+            broadcast_lastest_status();
           }
         ).on('error', function(err){
           obj.error = err;
           obj.type = "url";
+
+          job_queue = util.get_queue(obj.queue, false);
+          job_queue.failed_jobs ++;
+
           obj.timestamp = moment().format('YYYY-MM-DD HH:mm:ss');
           db_errors.insert(obj, function(err, doc){ /** inserted */ });
+          broadcast_lastest_status();
         });
       }
     }
 
     jobs.push(job);
     queue.push(task);
+    broadcast_lastest_status();
   },
 
   // curl : function(url, callback){
