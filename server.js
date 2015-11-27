@@ -100,19 +100,21 @@ app.get('/status', function(req, res){
       name : q_key,
       waiting : queues[q_key].length(),
       running : queues[q_key].running(),
-      processing : queues[q_key].workersList()
+      processing : queues[q_key].workersList(),
+      last_ping : moment(queues[q_key].last_ping, "YYYY-MM-DD HH:mm:ss").fromNow(),
+      total_jobs : queues[q_key].total_jobs
     };
     status.queues.push(queue);
   }
 
   // sort queues by waiting then by name
   status.queues.sort(function(a, b){
-    if(a.waiting > b.waiting) return -1;
-    if(a.waiting < b.waiting) return 1;
-    if(a.running > b.running) return -1;
-    if(a.running < b.running) return 1;
-    if(a.name.toLowerCase() > b.name.toLowerCase()) return -1;
-    if(a.name.toLowerCase() < b.name.toLowerCase()) return 1;
+    if(a.waiting > b.waiting) return -1;                       // descending
+    if(a.waiting < b.waiting) return 1;                        // descending
+    if(a.running > b.running) return -1;                       // descending
+    if(a.running < b.running) return 1;                        // descending
+    if(a.name.toLowerCase() > b.name.toLowerCase()) return 1; // ascending
+    if(a.name.toLowerCase() < b.name.toLowerCase()) return -1;  // ascending
     return 0;
   });
 
@@ -127,7 +129,12 @@ util = {
         task.obj.finished = finished;
         task.execute(task.obj);
       }, settings.concurrency);
+
+      queues[name].total_jobs = 0;
     }
+
+    queues[name].total_jobs ++;
+    queues[name].last_ping = moment().format("YYYY-MM-DD HH:mm:ss");
 
     return queues[name];
   },
