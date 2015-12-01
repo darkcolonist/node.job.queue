@@ -138,7 +138,7 @@ util = {
         paused      : queues[q_key].paused,
         waiting     : queues[q_key].length(),
         running     : queues[q_key].running(),
-        last_ping   : moment(queues[q_key].last_ping, "YYYY-MM-DD HH:mm:ss").fromNow(),
+        last_ping   : util.from_now(queues[q_key].last_ping),
         last_ping_n : queues[q_key].last_ping,
         total_jobs  : queues[q_key].total_jobs,
         failed_jobs : queues[q_key].failed_jobs
@@ -175,15 +175,34 @@ util = {
     });
 
     for(var t_key in status.tasks){
-      status.tasks[t_key].added = moment().diff(
-        moment(status.tasks[t_key].date_added, "YYYY-MM-DD HH:mm:ss"),
-        'seconds') + "s ago";
-      status.tasks[t_key].started = moment().diff(
-        moment(status.tasks[t_key].date_started, "YYYY-MM-DD HH:mm:ss"),
-        'seconds') + "s ago";
+      status.tasks[t_key].added = util.from_now(status.tasks[t_key].date_added);
+      status.tasks[t_key].started = util.from_now(status.tasks[t_key].date_started);
     }
 
     return status;
+  },
+
+  from_now : function(the_date, display_type){
+    var display_type = typeof display_type === 'undefined' 
+      ? 'default' 
+      : display_type;
+
+    switch(display_type){
+      default:
+        var the_diff = moment().diff(
+        moment(the_date, "YYYY-MM-DD HH:mm:ss"),
+        'seconds');
+
+        var formatted = "";
+
+        if(the_diff > 0 && the_diff < 55000)
+          formatted = the_diff + "s ago";
+        else
+          formatted = "now"
+
+        return formatted;
+    }
+
   },
 
   get_queue : function(name, touch){
