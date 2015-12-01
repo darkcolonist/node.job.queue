@@ -2,7 +2,7 @@ var myApp = angular.module('myApp', []);
 
 myApp
   .factory('socket', function(){
-    return io.connect('http://localhost:1028')
+    return io.connect()
   })
   .controller('AppCtrl', ['$scope', 'socket', function($scope, socket){    
     $scope.queues = []
@@ -14,11 +14,11 @@ myApp
     })
 
     $scope.resume_queue = function(name){
-      socket.emit('queue:resume', name);
+      socket.emit('queue:resume', name)
     }
 
     $scope.pause_queue = function(name){
-      socket.emit('queue:pause', name);
+      socket.emit('queue:pause', name)
     }
 
 }]);
