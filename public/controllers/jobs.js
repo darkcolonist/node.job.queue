@@ -9,6 +9,7 @@ myApp
 
     socket.on('status', function(data){
       $scope.queues = data.queues
+      $scope.tasks = data.tasks
       $scope.$digest()
     })
 
