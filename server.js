@@ -108,7 +108,19 @@ var broadcast_lastest_status = function(){
 
 io.on('connection', function(socket){
   broadcast_lastest_status();
-})
+
+  socket.on('queue:pause', function(queue_name){
+    var queue = util.get_queue(queue_name, false);
+    queue.pause();
+    broadcast_lastest_status();
+  });
+
+  socket.on('queue:resume', function(queue_name){
+    var queue = util.get_queue(queue_name, false);
+    queue.resume();
+    broadcast_lastest_status();
+  });
+});
 
 app.get('/jobs', function(req, res){
   res.json(jobs);
@@ -123,6 +135,7 @@ util = {
     for(var q_key in queues){
       var queue = {
         name        : q_key,
+        paused      : queues[q_key].paused,
         waiting     : queues[q_key].length(),
         running     : queues[q_key].running(),
         last_ping   : moment(queues[q_key].last_ping, "YYYY-MM-DD HH:mm:ss").fromNow(),
@@ -145,12 +158,12 @@ util = {
 
     // sort queues by waiting then by name
     status.queues.sort(function(a, b){
-      if(a.waiting > b.waiting) return -1;                        // descending
-      if(a.waiting < b.waiting) return 1;                         // descending
-      if(a.running > b.running) return -1;                        // descending
-      if(a.running < b.running) return 1;                         // descending
-      if(a.last_ping_n > b.last_ping_n) return -1;                // descending
-      if(a.last_ping_n < b.last_ping_n) return 1;                 // descending
+      // if(a.waiting > b.waiting) return -1;                        // descending
+      // if(a.waiting < b.waiting) return 1;                         // descending
+      // if(a.running > b.running) return -1;                        // descending
+      // if(a.running < b.running) return 1;                         // descending
+      // if(a.last_ping_n > b.last_ping_n) return -1;                // descending
+      // if(a.last_ping_n < b.last_ping_n) return 1;                 // descending
       if(a.name.toLowerCase() > b.name.toLowerCase()) return 1;   // ascending
       if(a.name.toLowerCase() < b.name.toLowerCase()) return -1;  // ascending
       return 0;

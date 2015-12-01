@@ -13,4 +13,12 @@ myApp
       $scope.$digest()
     })
 
+    $scope.resume_queue = function(name){
+      socket.emit('queue:resume', name);
+    }
+
+    $scope.pause_queue = function(name){
+      socket.emit('queue:pause', name);
+    }
+
 }]);

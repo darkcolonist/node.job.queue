@@ -28,7 +28,16 @@
             <th>Last Activity</th>
           </tr>
           <tr ng-repeat="queue in queues">
-            <td ng-bind="queue.name"></td>
+            <td>
+              <button type="button" class="btn btn-xs" 
+                title="{{queue.paused ? 'resume '+queue.name : 'pause '+queue.name}}"
+                ng-class="queue.paused ? 'btn-success' : 'btn-default'"
+                ng-click="queue.paused ? resume_queue(queue.name) : pause_queue(queue.name)">
+                  <span ng-show="!queue.paused" class="glyphicon glyphicon-pause" aria-hidden="true"></span>
+                  <span ng-show="queue.paused" class="glyphicon glyphicon-play" aria-hidden="true"></span>
+              </button>
+              <span ng-bind="queue.name"></span>
+            </td>
             <td><span ng-bind="queue.running" ng-class="{'label-success': queue.running > 0, 'label-default' : queue.running == 0}" class="label"></span></td>
             <td><span ng-bind="queue.waiting" ng-class="{'label-warning': queue.waiting > 0, 'label-default' : queue.waiting == 0}" class="label"></span></td>
             <td ng-bind="queue.total_jobs"></td>
