@@ -23,9 +23,9 @@
             <th>Queue</th>
             <th>Running</th>
             <th>Waiting</th>
-            <th>Total</th>
             <th>Failed</th>
-            <th>Last Activity</th>
+            <th>Total</th>
+            <th>Last Enqueue</th>
           </tr>
           <tr ng-repeat="queue in queues">
             <td>
@@ -40,8 +40,8 @@
             </td>
             <td><span ng-bind="queue.running" ng-class="{'label-success': queue.running > 0, 'label-default' : queue.running == 0}" class="label"></span></td>
             <td><span ng-bind="queue.waiting" ng-class="{'label-warning': queue.waiting > 0, 'label-default' : queue.waiting == 0}" class="label"></span></td>
-            <td ng-bind="queue.total_jobs"></td>
             <td><span ng-bind="queue.failed_jobs" ng-class="{'label-danger': queue.failed_jobs > 0, 'label-default' : queue.failed_jobs == 0}" class="label"></span></td>
+            <td ng-bind="queue.total_jobs"></td>
             <td ng-bind="queue.last_ping"></td>
           </tr>
         </table>

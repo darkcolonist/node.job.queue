@@ -151,7 +151,7 @@ util = {
 
       if(moment().diff(
         moment(queue.last_ping_n, "YYYY-MM-DD HH:mm:ss"),
-        'seconds') < settings.idle_queue_display){
+        'seconds') < settings.idle_queue_display || !queues[q_key].idle()){
         status.queues.push(queue);
       }
     }
