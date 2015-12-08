@@ -121,12 +121,13 @@ var fetch_and_emit_errors = function(queue_name){
       for (var i = 0; i < docs.length; i++) {
         var error_item = {};
 
+        error_item._id = docs[i]._id;
         error_item.url = docs[i].url;
         error_item.error = docs[i].error;
         error_item.url_response = docs[i].url_response;
         error_item.data = docs[i].data;
         // error_item.reported = util.from_now(docs[i].timestamp);
-        error_item.reported = moment(docs[i].timestamp).fromNow();
+        error_item.reported = moment(docs[i].timestamp).fromNow(true);
         error_list.push(error_item);
       }
 

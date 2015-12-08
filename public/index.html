@@ -43,12 +43,14 @@
             </td>
             <td><span ng-bind="queue.running" ng-class="{'label-success': queue.running > 0, 'label-default' : queue.running == 0}" class="label"></span></td>
             <td><span ng-bind="queue.waiting" ng-class="{'label-warning': queue.waiting > 0, 'label-default' : queue.waiting == 0}" class="label"></span></td>
-            <td><span ng-bind="queue.failed_jobs" 
-              ng-class="{'label-danger pointer': queue.failed_jobs > 0, 'label-default' : queue.failed_jobs == 0}" 
-              ng-click="fetch_errors(queue.name)"
-              class="label"
-              data-toggle="modal"
-              data-target=".errors-modal"></span></td>
+            <td>
+              <span ng-bind="queue.failed_jobs" 
+                          ng-class="{'label-danger': queue.failed_jobs > 0, 'label-default' : queue.failed_jobs == 0}" 
+                          ng-click="fetch_errors(queue.name)"
+                          class="label pointer"
+                          title="show last 20 failures"
+                          data-toggle="modal"
+                          data-target=".errors-modal"></span></td>
             <td ng-bind="queue.total_jobs"></td>
             <td ng-bind="queue.last_ping"></td>
           </tr>
@@ -88,17 +90,50 @@
             <div class="modal-body">
               <table class="table table-striped">
                 <tr>
-                  <th>URL</th>
-                  <th>Error</th>
-                  <th>URL Response</th>
-                  <th>Data</th>
-                  <th>Reported</th>
+                  <th width="15%">URL</th>
+                  <th width="20%">Error</th>
+                  <th width="20%">URL Response</th>
+                  <th width="30%">Data</th>
+                  <th width="10%">Age</th>
                 </tr>
                 <tr ng-repeat="error_item in error.list">
-                  <td ng-bind="error_item.url"></td>
-                  <td><pre ng-bind="(error_item.error|json)"></pre></td>
-                  <td><pre ng-bind="(error_item.url_response|json)"></pre></td>
-                  <td><pre ng-bind="(error_item.data|json)"></pre></td>
+                  <td>
+                    <input class="form-control input-sm" 
+                      type="text" 
+                      readonly="readonly" 
+                      value="{{error_item.url}}" 
+                      title="{{error_item.url}}" />
+                  </td>
+                  <td>
+                    <button class="btn btn-default btn-xs" 
+                      type="button" 
+                      data-toggle="collapse" 
+                      data-target=".error-{{error_item._id}}" 
+                      aria-expanded="false" 
+                      aria-controls="error-error-{{error_item._id}}">
+                      <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span> Show/Hide
+                    </button>
+                    <pre class="collapse error-{{error_item._id}}" id="error-error-{{error_item._id}}" ng-bind="(error_item.error|json)"></pre></td>
+                  <td>
+                    <button class="btn btn-default btn-xs" 
+                      type="button" 
+                      data-toggle="collapse" 
+                      data-target=".error-{{error_item._id}}" 
+                      aria-expanded="false" 
+                      aria-controls="error-error-{{error_item._id}}">
+                      <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span> Show/Hide
+                    </button>
+                    <pre class="collapse error-{{error_item._id}}" id="error-url_response-{{error_item._id}}" ng-bind="(error_item.url_response|json)"></pre></td>
+                  <td>
+                    <button class="btn btn-default btn-xs" 
+                      type="button" 
+                      data-toggle="collapse" 
+                      data-target=".error-{{error_item._id}}" 
+                      aria-expanded="false" 
+                      aria-controls="error-error-{{error_item._id}}">
+                      <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span> Show/Hide
+                    </button>
+                    <pre class="collapse error-{{error_item._id}}" id="error-data-{{error_item._id}}" ng-bind="(error_item.data|json)"></pre></td>
                   <td ng-bind="error_item.reported"></td>
                 </tr>
               </table>

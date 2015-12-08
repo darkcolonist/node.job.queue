@@ -15,7 +15,7 @@ myApp
 
     socket.on('queue:fetch_errors', function(data){
       $scope.error = data
-      $scope.$digest();
+      $scope.$digest()
     })
 
     $scope.resume_queue = function(name){
