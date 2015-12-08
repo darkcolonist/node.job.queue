@@ -112,6 +112,9 @@ var broadcast_lastest_status = function(){
 }
 
 var fetch_and_emit_errors = function(queue_name){
+  // reset the failed jobs to 0 after requesting
+  util.get_queue(queue_name).failed_jobs = 0;
+
   db_errors.find({queue:queue_name}).limit(settings.errors_to_show_modal).sort({timestamp:-1})
     .exec(function(err, docs){
       var error_obj = {};
