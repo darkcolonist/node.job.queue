@@ -90,6 +90,7 @@
             <div class="modal-body">
               <table class="table table-striped">
                 <tr>
+                  <th width="1%">&nbsp;</th>
                   <th width="15%">URL</th>
                   <th width="20%">Error</th>
                   <th width="20%">URL Response</th>
@@ -97,6 +98,13 @@
                   <th width="10%">Age</th>
                 </tr>
                 <tr ng-repeat="error_item in error.list">
+                  <td>
+                    <button type="button" class="btn btn-xs btn-success" 
+                      title="re-queue"
+                      ng-click="re_queue_failed(error_item._id)">
+                        <span class="glyphicon glyphicon-repeat" aria-hidden="true"></span>
+                    </button>
+                  </td>
                   <td>
                     <input class="form-control input-sm" 
                       type="text" 

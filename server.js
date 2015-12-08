@@ -118,9 +118,29 @@ var broadcast_lastest_status = function(){
   }, settings.idle_update_frequency);
 }
 
+var re_queue_failed = function(failed_id){  
+  db_errors.find({_id:failed_id}).exec(function(err, docs){
+    if(docs.length == 0)
+      return;
+
+    var data = {
+      url      : docs[0].url,
+      queue    : docs[0].queue,
+      data     : docs[0].data,
+      callback : docs[0].callback
+    };
+
+    util.enqueue(data);
+
+    db_errors.remove({ _id : failed_id }, { }, function (err, numRemoved) {
+      fetch_and_emit_errors(docs[0].queue);
+    });
+  });
+}
+
 var fetch_and_emit_errors = function(queue_name){
   // reset the failed jobs to 0 after requesting
-  util.get_queue(queue_name).failed_jobs = 0;
+  util.get_queue(queue_name, false).failed_jobs = 0;
 
   db_errors.find({queue:queue_name}).limit(settings.errors_to_show_modal).sort({timestamp:-1})
     .exec(function(err, docs){
@@ -145,6 +165,7 @@ var fetch_and_emit_errors = function(queue_name){
       error_obj.queue = queue_name;
 
       io.emit('queue:fetch_errors', error_obj);
+      broadcast_lastest_status();
     });
 }
 
@@ -168,8 +189,11 @@ io.on('connection', function(socket){
   });
 
   socket.on('queue:fetch_errors', function(queue_name){
-    fetch_and_emit_errors(queue_name);
-    broadcast_lastest_status();
+    fetch_and_emit_errors(queue_name);  
+  });
+
+  socket.on('queue:re_queue_failed', function(failed_id){
+    re_queue_failed(failed_id);
   });
 });
 
@@ -277,6 +301,21 @@ util = {
     return queues[name];
   },
 
+  /**
+   * 
+   * data = {
+   *   _id    // optional
+   *   queue  // optional
+   *   status // optional
+   *   url
+   *   data
+   *   callback
+   * }
+   * 
+   * @param  object data  
+   * @param  bool in_db 
+   * @return void
+   */
   enqueue : function(data, in_db){
     var queue_name = typeof data.queue === 'undefined' ? "main" : data.queue;
     var in_db = typeof in_db === 'undefined' ? false : in_db;
@@ -322,6 +361,11 @@ util = {
         if (!error && response.statusCode == 200) {
           obj.status = "done";
         }else{
+          if(typeof response !== 'undefined'){
+            var error = {};
+            error.code = response.statusCode;
+          }
+
           util.record_failure(obj, error, "called");
         }
 
@@ -361,7 +405,7 @@ util = {
         broadcast_lastest_status();
       }
     ).on('error', function(err){
-      util.record_failure(obj, err, "url");
+      // util.record_failure(obj, err, "url");
     });
 
     return obj;
@@ -374,7 +418,7 @@ util = {
     obj.timestamp = moment().format('YYYY-MM-DD HH:mm:ss');
     db_errors.insert(obj, function(err, doc){ /** inserted */ });
 
-    if(type == 'url'){
+    if(type != 'callback_url'){
       job_queue = util.get_queue(obj.queue, false);
       job_queue.failed_jobs ++;
       job_queue.consecutive_failures ++;

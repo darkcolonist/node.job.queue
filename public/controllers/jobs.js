@@ -10,12 +10,12 @@ myApp
     socket.on('status', function(data){
       $scope.queues = data.queues
       $scope.tasks = data.tasks
-      $scope.$digest()
+      try_digest();
     })
 
     socket.on('queue:fetch_errors', function(data){
       $scope.error = data
-      $scope.$digest()
+      try_digest();
     })
 
     $scope.resume_queue = function(name){
@@ -30,4 +30,18 @@ myApp
       socket.emit('queue:fetch_errors', name)
     }
 
-}]);
+    $scope.re_queue_failed = function(failed_id){
+      socket.emit('queue:re_queue_failed', failed_id) 
+    }
+
+    var try_digest = function(){
+      if(!$scope.$$phase){
+        $scope.$digest()
+        // console.log("digest success");
+      }else{
+        // console.log("digest running, will try in half a second..");
+        setTimeout(try_digest, 500);
+      }
+    }
+
+}])
