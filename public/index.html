@@ -43,7 +43,12 @@
             </td>
             <td><span ng-bind="queue.running" ng-class="{'label-success': queue.running > 0, 'label-default' : queue.running == 0}" class="label"></span></td>
             <td><span ng-bind="queue.waiting" ng-class="{'label-warning': queue.waiting > 0, 'label-default' : queue.waiting == 0}" class="label"></span></td>
-            <td><span ng-bind="queue.failed_jobs" ng-class="{'label-danger': queue.failed_jobs > 0, 'label-default' : queue.failed_jobs == 0}" class="label"></span></td>
+            <td><span ng-bind="queue.failed_jobs" 
+              ng-class="{'label-danger pointer': queue.failed_jobs > 0, 'label-default' : queue.failed_jobs == 0}" 
+              ng-click="fetch_errors(queue.name)"
+              class="label"
+              data-toggle="modal"
+              data-target=".errors-modal"></span></td>
             <td ng-bind="queue.total_jobs"></td>
             <td ng-bind="queue.last_ping"></td>
           </tr>
@@ -74,10 +79,45 @@
         </table>
       </div>
 
+      <div class="errors-modal fade modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title" id="myModalLabel">Last Known Errors of <span ng-bind="error.queue"></span></h4>
+            </div>
+            <div class="modal-body">
+              <table class="table table-striped">
+                <tr>
+                  <th>URL</th>
+                  <th>Error</th>
+                  <th>URL Response</th>
+                  <th>Data</th>
+                  <th>Reported</th>
+                </tr>
+                <tr ng-repeat="error_item in error.list">
+                  <td ng-bind="error_item.url"></td>
+                  <td><pre ng-bind="(error_item.error|json)"></pre></td>
+                  <td><pre ng-bind="(error_item.url_response|json)"></pre></td>
+                  <td><pre ng-bind="(error_item.data|json)"></pre></td>
+                  <td ng-bind="error_item.reported"></td>
+                </tr>
+              </table>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-primary">Clear Error Count</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.7/socket.io.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular.min.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+
     <script src="controllers/jobs.js"></script>
   </body>
 </html>

@@ -55,6 +55,11 @@ var settings = {
   idle_queue_display: 300,
 
   /**
+   * limit number of errors to show in modal
+   */
+  errors_to_show_modal: 20,
+
+  /**
    * expiration time of errors in errors.db. (hours)
    * after this is reached, errors get pruned from errors.db
    * @type {Number}
@@ -106,6 +111,32 @@ var broadcast_lastest_status = function(){
   }, settings.idle_update_frequency);
 }
 
+var fetch_and_emit_errors = function(queue_name){
+  db_errors.find({queue:queue_name}).limit(settings.errors_to_show_modal).sort({timestamp:-1})
+    .exec(function(err, docs){
+      var error_obj = {};
+
+      var error_list = [];
+
+      for (var i = 0; i < docs.length; i++) {
+        var error_item = {};
+
+        error_item.url = docs[i].url;
+        error_item.error = docs[i].error;
+        error_item.url_response = docs[i].url_response;
+        error_item.data = docs[i].data;
+        // error_item.reported = util.from_now(docs[i].timestamp);
+        error_item.reported = moment(docs[i].timestamp).fromNow();
+        error_list.push(error_item);
+      }
+
+      error_obj.list = error_list;
+      error_obj.queue = queue_name;
+
+      io.emit('queue:fetch_errors', error_obj);
+    });
+}
+
 io.on('connection', function(socket){
   broadcast_lastest_status();
 
@@ -118,6 +149,11 @@ io.on('connection', function(socket){
   socket.on('queue:resume', function(queue_name){
     var queue = util.get_queue(queue_name, false);
     queue.resume();
+    broadcast_lastest_status();
+  });
+
+  socket.on('queue:fetch_errors', function(queue_name){
+    fetch_and_emit_errors(queue_name);
     broadcast_lastest_status();
   });
 });
