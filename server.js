@@ -64,7 +64,14 @@ var settings = {
    * after this is reached, errors get pruned from errors.db
    * @type {Number}
    */
-  max_age_of_errors : 24
+  max_age_of_errors : 24,
+
+  /**
+   * if this number is reached, queue will automatically pause to
+   * conserve resources
+   * @type {Number}
+   */
+  consecutive_failures_before_pause : 5
 };
 
 var jobs = [];
@@ -153,6 +160,10 @@ io.on('connection', function(socket){
   socket.on('queue:resume', function(queue_name){
     var queue = util.get_queue(queue_name, false);
     queue.resume();
+
+    // reset consecutive failures
+    queue.consecutive_failures = 0;
+
     broadcast_lastest_status();
   });
 
@@ -255,6 +266,7 @@ util = {
 
       queues[name].total_jobs = 0;
       queues[name].failed_jobs = 0;
+      queues[name].consecutive_failures = 0;
     }
 
     if(typeof touch === 'undefined' || touch == true){
@@ -310,11 +322,7 @@ util = {
         if (!error && response.statusCode == 200) {
           obj.status = "done";
         }else{
-          obj.status = "failed";
-          obj.error = "failed";
-          obj.type = "called";
-          obj.timestamp = moment().format('YYYY-MM-DD HH:mm:ss');
-          db_errors.insert(obj, function(err, doc){ /** inserted */ });
+          util.record_failure(obj, error, "called");
         }
 
         db_jobs.update({ _id: obj._id }, { $set: { "status" : obj.status } }, {}, function(err, num_replaced, upsert){});
@@ -322,23 +330,19 @@ util = {
         if(typeof obj.callback !== 'undefined'){
           
           try{
-              obj.url_response = JSON.parse(body);
+            obj.url_response = JSON.parse(body);
           }catch(e){
-              obj.url_response = body;
+            obj.url_response = body;
           }
           
           request.post(
             obj.callback,
             { form : obj },
             function(error_cb, response_cb, body_cb){
-              // nothing needs to be done here
+              util.record_failure(obj, error_cb, "callback_url");
             }
           ).on('error', function(err){
-            obj.error = err;
-            obj.type = "callback_url";
-            obj.timestamp = moment().format('YYYY-MM-DD HH:mm:ss');
-            db_errors.insert(obj, function(err, doc){ /** inserted */ });
-            broadcast_lastest_status();
+            util.record_failure(obj, err, "callback_url");
           });
         }
 
@@ -357,18 +361,30 @@ util = {
         broadcast_lastest_status();
       }
     ).on('error', function(err){
-      obj.error = err;
-      obj.type = "url";
-
-      job_queue = util.get_queue(obj.queue, false);
-      job_queue.failed_jobs ++;
-
-      obj.timestamp = moment().format('YYYY-MM-DD HH:mm:ss');
-      db_errors.insert(obj, function(err, doc){ /** inserted */ });
-      broadcast_lastest_status();
+      util.record_failure(obj, err, "url");
     });
 
     return obj;
+  },
+
+  record_failure : function(obj, err, type){
+    obj.status = "failed";
+    obj.error = err;
+    obj.type = type;
+    obj.timestamp = moment().format('YYYY-MM-DD HH:mm:ss');
+    db_errors.insert(obj, function(err, doc){ /** inserted */ });
+
+    if(type == 'url'){
+      job_queue = util.get_queue(obj.queue, false);
+      job_queue.failed_jobs ++;
+      job_queue.consecutive_failures ++;
+
+      if(job_queue.consecutive_failures >= settings.consecutive_failures_before_pause){
+        job_queue.pause();
+      }
+    }
+
+    broadcast_lastest_status();
   },
 
   try_enqueue_from_db : function(){
