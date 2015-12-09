@@ -100,7 +100,7 @@
                 <tr ng-repeat="error_item in error.list">
                   <td>
                     <button type="button" class="btn btn-xs btn-success" 
-                      title="re-queue"
+                      title="re-queue {{error_item._id}}"
                       ng-click="re_queue_failed(error_item._id)">
                         <span class="glyphicon glyphicon-repeat" aria-hidden="true"></span>
                     </button>

@@ -130,7 +130,9 @@ var re_queue_failed = function(failed_id){
       callback : docs[0].callback
     };
 
-    util.enqueue(data);
+    util.enqueue(data, false, function(){
+      fetch_and_emit_errors(docs[0].queue);
+    });
 
     db_errors.remove({ _id : failed_id }, { }, function (err, numRemoved) {
       fetch_and_emit_errors(docs[0].queue);
@@ -316,7 +318,7 @@ util = {
    * @param  bool in_db 
    * @return void
    */
-  enqueue : function(data, in_db){
+  enqueue : function(data, in_db, after_curl_cb){
     var queue_name = typeof data.queue === 'undefined' ? "main" : data.queue;
     var in_db = typeof in_db === 'undefined' ? false : in_db;
 
@@ -342,7 +344,7 @@ util = {
         db_jobs.update({ _id: obj._id }, { $set: { "status" : obj.status } }, {}, function(err, num_replaced, upsert){});
         broadcast_lastest_status();
 
-        obj = util.curl(obj);
+        obj = util.curl(obj, after_curl_cb);
       }
     }
 
@@ -351,7 +353,7 @@ util = {
     broadcast_lastest_status();
   },
 
-  curl : function(obj){
+  curl : function(obj, after_curl_cb){
     obj.date_started = moment().format("YYYY-MM-DD HH:mm:ss");
 
     request.post(
@@ -360,6 +362,7 @@ util = {
       function (error, response, body) {
         if (!error && response.statusCode == 200) {
           obj.status = "done";
+          util.get_queue(obj.queue, false).consecutive_failures = 0;
         }else{
           if(typeof response !== 'undefined'){
             var error = {};
@@ -403,6 +406,9 @@ util = {
 
         obj.finished();
         broadcast_lastest_status();
+
+        if(typeof after_curl_cb === 'function')
+          after_curl_cb();
       }
     ).on('error', function(err){
       // util.record_failure(obj, err, "url");
